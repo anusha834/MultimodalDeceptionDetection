@@ -257,7 +257,6 @@ class EnhancedSpeechToTextConverter:
 
                 self.whisper_direct = whisper.load_model("small")
                 self.use_direct_whisper = True
-                print("✓ Direct Whisper model loaded (better filler preservation)")
             except Exception as e:
                 print(f"Failed to load direct Whisper: {e}")
                 self.whisper_direct = None
@@ -1072,7 +1071,7 @@ class EnhancedLinguisticAnalyzer:
         for i in range(len(words) - 1):
             word1 = words[i].strip('.,!?;:"()')
             word2 = words[i + 1].strip('.,!?;:"()')
-            if word1 == word2 and len(word1) > 2:  # Avoid counting punctuation
+            if word1 == word2 and len(word1) > 2: 
                 repetitions += 1
                 print(f"DEBUG: Found repetition: '{word1}'")
         
@@ -1196,11 +1195,11 @@ class EnhancedDeceptionModel:
     def __init__(self):
 
         self.thresholds = {
-            'blink_rate_high': 25,  # Lowered from 25
-            'pitch_variation_high': 50,  # Lowered from 50
-            'pause_ratio_high': 0.3,  # Lowered from 0.3
-            'filler_words_high': 0.05,  # Lowered from 0.05
-            'uncertainty_words_high': 0.03,  # Lowered from 0.03
+            'blink_rate_high': 30,  
+            'pitch_variation_high': 50,  
+            'pause_ratio_high': 0.3,
+            'filler_words_high': 0.05,
+            'uncertainty_words_high': 0.03,  
             'repetition_high': 0.01,
             'audio_disfluencies_high': 0.1
         }
@@ -2061,3 +2060,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error starting enhanced application: {e}")
         print("Please install missing dependencies and try again.")
+
