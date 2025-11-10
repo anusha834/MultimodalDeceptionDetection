@@ -1,17 +1,19 @@
-This project pulls together a full vision pipeline to decide whether a person is being truthful or deceptive on a **frame-by-frame** basis.
-It runs four stages:
+# Face + Emotion + Micro-Expression → Lie Detection Pipeline
 
-1. Face Detection →
-2. Emotion Features →
-3. Action Unit Features →
-4. SVM Classification
-   …then outputs **Truth / Lie** with probability.
+This project ties together several computer-vision models to estimate whether a person is being truthful or deceptive on a frame-by-frame basis.
 
-Below is a simple breakdown of how everything fits together.
+The system runs through four stages:
+
+1. Face detection
+2. Emotion feature extraction
+3. Micro-expression feature extraction
+4. SVM-based truth vs. lie prediction
+
+The final output is a probability-based decision for each frame.
 
 ---
 
-## ✅ 1) Face Detection — RetinaFace
+## 1) Face Detection — RetinaFace
 
 **File**
 `model/Facedetection/RetinaFace/RetinaFaceDetection.py`
@@ -21,16 +23,16 @@ Below is a simple breakdown of how everything fits together.
 
 **What it does**
 
-* Finds faces
-* Returns bounding boxes + 5 facial landmarks
-* Used to crop + align the face before feature extraction
+* Detects faces
+* Returns bounding boxes and landmarks
+* Provides aligned face crops for downstream models
 
 **Backbone**
 MobileNet-0.25
 
 ---
 
-## ✅ 2) Emotion Recognition — Self-Relation Attention
+## 2) Emotion Recognition — Self-Relation Attention Model
 
 **File**
 `model/Emotion/lie_emotion_process.py`
@@ -40,8 +42,8 @@ MobileNet-0.25
 
 **What it does**
 
-* Takes cropped face
-* Produces an emotional embedding
+* Takes the aligned face
+* Generates an emotional feature embedding
 * Predicts one of:
 
 ```
@@ -49,15 +51,14 @@ MobileNet-0.25
 ```
 
 **Architecture**
-ResNet + custom self-relation attention module
+ResNet with a custom self-relation attention module
 
-**Used for**
-
-* Feature embedding passed into final SVM
+**Why it matters**
+The emotional embedding becomes part of the final deception classifier.
 
 ---
 
-## ✅ 3) Action Unit (AU) Extraction — Action_ResNet
+## 3) Micro-Expression Extraction
 
 **File**
 `model/action_v4_L12_BCE_MLSM/lie_action_process.py`
@@ -67,23 +68,26 @@ ResNet + custom self-relation attention module
 
 **What it does**
 
-* Extracts 12 facial Action Units (AUs)
-  e.g. brow raise, lip corner puller, jaw drop
+* Looks for subtle, short-lived facial movements
+  Examples:
+
+  * brief brow lift
+  * jaw drop
+  * slight lip corner pull
 * Produces:
 
-  * AU predictions
-  * High-level AU embedding
+  * micro-expression predictions
+  * a compact embedding representing these cues
 
 **Architecture**
-Modified SE-ResNet
+Modified ResNet backbone
 
-**Used for**
-
-* Feature embedding passed into final SVM
+**Why it matters**
+These micro-expression features carry valuable signal about emotion leakage, which helps the SVM decide truth vs. deception.
 
 ---
 
-## ✅ 4) Lie / Truth Classification — SVM
+## 4) Lie vs. Truth Classification — SVM
 
 **File**
 `model/SVM_model/se_res50+EU_v2/se_res50+EU/split_svc_AUC0.872.joblib`
@@ -93,56 +97,56 @@ Modified SE-ResNet
 
 **What it does**
 
-* Inputs:
+* Takes two embeddings:
 
-  * AU embedding
-  * Emotion embedding
+  * micro-expression representation
+  * emotion representation
 * Outputs:
 
-  * Truth / Lie
-  * Probability score
+  * predicted class: Truth or Lie
+  * confidence score
 
-This is the final decision for each frame.
-Used by both the GUI and backend.
-
----
-
-## 📦 End-to-End Flow
-
-1. Detect + crop face → RetinaFace
-2. Extract emotion embedding → Self-Relation attention model
-3. Extract AU embedding → Action ResNet
-4. Concatenate embeddings
-5. Feed to SVM → Truth / Lie + probability
+This is the final decision stage used by both the backend and the GUI.
 
 ---
 
-## Output
+## End-to-End Flow
 
-For each frame:
+1. Detect and crop face with RetinaFace
+2. Extract emotional features
+3. Extract micro-expression features
+4. Combine both embeddings
+5. SVM predicts truth or lie with a probability score
+
+---
+
+## Output Format
+
+Each processed frame can look something like this:
 
 ```json
 {
   "truth": true,
   "probability": 0.78,
   "emotion": "Neutral",
-  "AU_features": [...],
+  "microexpressions": [...],
   "embeddings": {
     "emotion": [...],
-    "AU": [...]
+    "microexpression": [...]
   }
 }
 ```
 
 ---
 
-## Folder Summary
+## Folder Layout
 
 ```
 model/
 │
 ├── Facedetection/
-│   └── RetinaFace/...
+│   └── RetinaFace/
+│       └── ...
 │
 ├── Emotion/
 │   └── lie_emotion_process.py
@@ -159,8 +163,9 @@ model/
 
 ## Notes
 
-* Face alignment is handled before feeding into downstream models
-* The SVM is trained offline; only inference runs here
-* Emotion + AU embeddings are the main signal for the final classifier
+* Faces are aligned before running the recognition models
+* Emotion + micro-expression features form the core input to the final classifier
+* The SVM is used only for inference; training is performed beforehand
 
 ---
+
