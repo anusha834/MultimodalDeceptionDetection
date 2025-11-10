@@ -1,5 +1,3 @@
----
-
 This project pulls together a full vision pipeline to decide whether a person is being truthful or deceptive on a **frame-by-frame** basis.
 It runs four stages:
 
