@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neural Deception Analyzer - Complete</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap");
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Rajdhani", sans-serif;
+        background: #0a0e27;
+        color: #fff;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .bg-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        background: radial-gradient(
+            circle at 20% 50%,
+            rgba(120, 0, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(0, 200, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 40% 20%,
+            rgba(255, 0, 100, 0.1) 0%,
+            transparent 50%
+          );
+        animation: bgShift 15s ease infinite;
+      }
+
+      @keyframes bgShift {
+        0%,
+        100% {
+          transform: scale(1) rotate(0deg);
+        }
+        50% {
+          transform: scale(1.1) rotate(5deg);
+        }
+      }
+
+      .scan-line {
+        position: fixed;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00ffff, transparent);
+        animation: scan 3s linear infinite;
+        z-index: 1;
+        opacity: 0.3;
+      }
+
+      @keyframes scan {
+        0% {
+          top: 0;
+        }
+        100% {
+          top: 100%;
+        }
+      }
+
+      .container {
+        position: relative;
+        z-index: 2;
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        font-family: "Orbitron", sans-serif;
+        font-size: 3em;
+        font-weight: 900;
+        background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientShift 3s ease infinite;
+        letter-spacing: 3px;
+      }
+
+      @keyframes gradientShift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .subtitle {
+        font-size: 1em;
+        color: #00ffff;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-top: 10px;
+        opacity: 0.8;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: rgba(15, 25, 50, 0.7);
+        backdrop-filter: blur(20px);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+      }
+
+      .video-container {
+        position: relative;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        border: 2px solid rgba(0, 255, 255, 0.3);
+      }
+
+      #videoFeed,
+      #uploadedVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .hud-overlay {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 8px;
+        font-family: "Orbitron", monospace;
+        font-size: 0.85em;
+        color: #00ffff;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        border: 2px solid;
+        border-radius: 8px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+      }
+
+      .btn-primary {
+        background: linear-gradient(45deg, #00ff88, #00ffff);
+        border-color: #00ffff;
+        color: #000;
+        box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+      }
+
+      .btn-danger {
+        background: linear-gradient(45deg, #ff0066, #ff3366);
+        border-color: #ff0066;
+        color: #fff;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(45deg, #6b00ff, #9b00ff);
+        border-color: #8b00ff;
+        color: #fff;
+      }
+
+      .btn-warning {
+        background: linear-gradient(45deg, #ff6b00, #ff9500);
+        border-color: #ff8500;
+        color: #fff;
+      }
+
+      button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .input-group {
+        margin-top: 15px;
+      }
+
+      .input-group label {
+        display: block;
+        color: #00ffff;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .input-group input,
+      .input-group textarea {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        border-radius: 5px;
+        color: #fff;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 14px;
+      }
+
+      .input-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .result-box {
+        text-align: center;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-size: 1.8em;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+        }
+      }
+
+      .result-truth {
+        background: linear-gradient(135deg, #00ff88, #00ffcc);
+        color: #000;
+        box-shadow: 0 10px 40px rgba(0, 255, 136, 0.6);
+      }
+
+      .result-deception {
+        background: linear-gradient(135deg, #ff0066, #ff6b00);
+        color: #fff;
+        box-shadow: 0 10px 40px rgba(255, 0, 100, 0.6);
+        animation: alertPulse 1s ease-in-out infinite;
+      }
+
+      @keyframes alertPulse {
+        0%,
+        100% {
+          box-shadow: 0 10px 40px rgba(255, 0, 100, 0.6);
+        }
+        50% {
+          box-shadow: 0 10px 60px rgba(255, 0, 100, 1);
+        }
+      }
+
+      .result-pending {
+        background: rgba(255, 255, 255, 0.05);
+        color: #00ffff;
+        border: 2px dashed rgba(0, 255, 255, 0.3);
+      }
+
+      .probability-container {
+        margin: 15px 0;
+      }
+
+      .probability-label {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 1em;
+        color: #00ffff;
+      }
+
+      .probability-bar {
+        height: 35px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 18px;
+        overflow: hidden;
+        border: 2px solid rgba(0, 255, 255, 0.3);
+      }
+
+      .probability-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff88, #ffff00, #ff6b00, #ff0066);
+        transition: width 0.8s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.1em;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin: 20px 0;
+      }
+
+      .stat-item {
+        background: rgba(0, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        border: 1px solid rgba(0, 255, 255, 0.2);
+      }
+
+      .stat-label {
+        font-size: 0.85em;
+        color: #00ffff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+      }
+
+      .stat-value {
+        font-size: 1.8em;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 900;
+        color: #fff;
+      }
+
+      .section-title {
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.1em;
+        font-weight: 700;
+        margin: 20px 0 12px 0;
+        padding: 8px 0;
+        border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+        color: #00ffff;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .au-list,
+      .emotion-list {
+        display: grid;
+        gap: 6px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .au-item,
+      .emotion-item {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 10px 12px;
+        border-radius: 6px;
+        border-left: 3px solid transparent;
+        transition: all 0.3s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9em;
+      }
+
+      .au-item.active {
+        background: rgba(0, 255, 136, 0.15);
+        border-left-color: #00ff88;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+      }
+
+      .emotion-item.active {
+        background: rgba(0, 200, 255, 0.15);
+        border-left-color: #00c8ff;
+      }
+
+      #status {
+        text-align: center;
+        padding: 10px;
+        margin-top: 12px;
+        border-radius: 6px;
+        background: rgba(0, 255, 255, 0.1);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        font-family: "Orbitron", monospace;
+        color: #00ffff;
+        font-size: 0.9em;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00ff88, #00ffff);
+        width: 0%;
+        transition: width 0.3s;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .file-label {
+        padding: 12px 20px;
+        font-size: 14px;
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-align: center;
+        background: linear-gradient(45deg, #ff6b00, #ff9500);
+        border: 2px solid #ff8500;
+        color: #fff;
+        transition: all 0.3s;
+        display: block;
+      }
+
+      .mode-toggle {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .mode-btn {
+        flex: 1;
+        padding: 10px;
+        background: rgba(0, 255, 255, 0.1);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        border-radius: 6px;
+        color: #00ffff;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        font-size: 0.9em;
+      }
+
+      .mode-btn.active {
+        background: rgba(0, 255, 255, 0.3);
+        border-color: #00ffff;
+      }
+
+      .processing-mode {
+        margin: 15px 0;
+      }
+
+      .processing-mode select {
+        width: 100%;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        border-radius: 5px;
+        color: #fff;
+        font-family: "Rajdhani", sans-serif;
+      }
+
+      .session-log {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 0.85em;
+        font-family: "Courier New", monospace;
+      }
+
+      .log-entry {
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+      }
+
+      .log-entry:last-child {
+        border-bottom: none;
+      }
+
+      .log-time {
+        color: #00ffff;
+        margin-right: 10px;
+      }
+
+      .log-result {
+        color: #00ff88;
+      }
+
+      .log-result.deception {
+        color: #ff0066;
+      }
+
+      @media (max-width: 1200px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        h1 {
+          font-size: 2em;
+        }
+        .controls {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-animation"></div>
+    <div class="scan-line"></div>
+
+    <div class="container">
+      <header>
+        <h1>⚡ NEURAL DECEPTION ANALYZER ⚡</h1>
+        <div class="subtitle">AI-Powered Truth Detection System</div>
+      </header>
+
+      <div class="main-grid">
+        <div class="card">
+          <div class="video-container">
+            <video
+              id="videoFeed"
+              autoplay
+              playsinline
+              style="display: none"
+            ></video>
+            <video id="uploadedVideo" style="display: none"></video>
+            <canvas id="overlay"></canvas>
+            <div class="hud-overlay">
+              <div>STATUS: <span id="hudStatus">STANDBY</span></div>
+              <div>
+                FRAME: <span id="hudFrame">0</span> | FPS:
+                <span id="hudFps">0</span>
+              </div>
+              <div>CONFIDENCE: <span id="hudConfidence">--</span></div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="startCamera" class="btn-primary">🎥 CAMERA</button>
+            <button id="stopCamera" class="btn-danger" disabled>⏹ STOP</button>
+            <button id="toggleContinuous" class="btn-secondary" disabled>
+              ▶ START SCAN
+            </button>
+            <button id="exportResults" class="btn-warning">💾 EXPORT</button>
+          </div>
+
+          <div class="controls" style="margin-top: 10px">
+            <label
+              for="videoUpload"
+              class="file-label"
+              style="grid-column: span 2"
+              >📁 UPLOAD VIDEO</label
+            >
+            <input type="file" id="videoUpload" accept="video/*" />
+            <button
+              id="clearData"
+              class="btn-secondary"
+              style="grid-column: span 2"
+            >
+              🗑️ CLEAR SESSION
+            </button>
+          </div>
+
+          <div class="processing-mode">
+            <label
+              style="
+                color: #00ffff;
+                font-size: 0.9em;
+                display: block;
+                margin-bottom: 5px;
+              "
+              >PROCESSING MODE:</label
+            >
+            <select id="processingInterval">
+              <option value="1">Every Frame (Slow, Most Accurate)</option>
+              <option value="10">Every 10 Frames (Fast)</option>
+              <option value="30" selected>Every 30 Frames (Balanced)</option>
+              <option value="60">Every 60 Frames (Very Fast)</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Question / Problem:</label>
+            <input
+              type="text"
+              id="questionInput"
+              placeholder="Enter the question being asked..."
+            />
+          </div>
+
+          <div class="input-group">
+            <label>Notes / Description:</label>
+            <textarea
+              id="notesInput"
+              placeholder="Enter any observations or notes..."
+            ></textarea>
+          </div>
+
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+
+          <div id="status">SYSTEM READY • AWAITING INPUT</div>
+        </div>
+
+        <div class="card">
+          <div id="resultBox" class="result-box result-pending">
+            AWAITING SCAN
+          </div>
+
+          <div class="probability-container">
+            <div class="probability-label">
+              <span>DECEPTION PROBABILITY</span>
+              <span id="probText">0%</span>
+            </div>
+            <div class="probability-bar">
+              <div
+                id="probabilityFill"
+                class="probability-fill"
+                style="width: 0%"
+              >
+                0%
+              </div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Frames Analyzed</div>
+              <div id="totalCount" class="stat-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Average Risk</div>
+              <div id="avgProb" class="stat-value">0%</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Truth Count</div>
+              <div id="truthCount" class="stat-value">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Deception Count</div>
+              <div id="deceptionCount" class="stat-value">0</div>
+            </div>
+          </div>
+
+          <div class="section-title">🧠 EMOTION ANALYSIS</div>
+          <div id="emotionList" class="emotion-list">
+            <div class="emotion-item">Awaiting data...</div>
+          </div>
+
+          <div class="section-title">⚡ ACTION UNITS</div>
+          <div id="auList" class="au-list">
+            <div class="au-item">Awaiting data...</div>
+          </div>
+
+          <div class="section-title">📋 SESSION LOG</div>
+          <div id="sessionLog" class="session-log">
+            <div class="log-entry">
+              <span class="log-time">--:--:--</span>
+              <span>Session started</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:5000/api";
+      let stream = null;
+      let analyzing = false;
+      let continuousMode = false;
+      let totalAnalyses = 0;
+      let totalProbability = 0;
+      let truthCount = 0;
+      let deceptionCount = 0;
+      let videoMode = "none";
+      let videoProcessing = false;
+      let currentFrame = 0;
+      let sessionData = [];
+      let lastFrameTime = Date.now();
+      let frameCount = 0;
+
+      const cameraVideo = document.getElementById("videoFeed");
+      const uploadedVideo = document.getElementById("uploadedVideo");
+      const canvas = document.getElementById("overlay");
+      const ctx = canvas.getContext("2d");
+
+      const AU_NAMES = [
+        "Inner brow raiser",
+        "Outer brow raiser",
+        "Brow lower",
+        "Upper Lid Raiser",
+        "Cheek raiser",
+        "Nose wrinkle",
+        "Lip corner puller",
+        "Lip corner depressor",
+        "Chin raiser",
+        "Lip Stretcher",
+        "Lips part",
+        "Jaw drop",
+      ];
+
+      const EMOTION_LABELS = [
+        "Happy",
+        "Angry",
+        "Disgust",
+        "Fear",
+        "Sad",
+        "Neutral",
+        "Surprise",
+      ];
+
+      // FPS Counter
+      setInterval(() => {
+        const fps = frameCount;
+        document.getElementById("hudFps").textContent = fps;
+        frameCount = 0;
+      }, 1000);
+
+      // Start Camera
+      document
+        .getElementById("startCamera")
+        .addEventListener("click", async () => {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: 1280, height: 720 },
+            });
+            cameraVideo.srcObject = stream;
+            cameraVideo.style.display = "block";
+            uploadedVideo.style.display = "none";
+            videoMode = "camera";
+
+            document.getElementById("startCamera").disabled = true;
+            document.getElementById("stopCamera").disabled = false;
+            document.getElementById("toggleContinuous").disabled = false;
+            document.getElementById("status").textContent =
+              "CAMERA ACTIVE • CLICK START SCAN";
+            document.getElementById("hudStatus").textContent = "CAMERA READY";
+
+            addLogEntry("Camera activated");
+          } catch (err) {
+            alert("⚠️ Camera access denied: " + err.message);
+          }
+        });
+
+      // Stop
+      document.getElementById("stopCamera").addEventListener("click", () => {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+          cameraVideo.srcObject = null;
+        }
+        if (uploadedVideo.src) {
+          uploadedVideo.pause();
+          uploadedVideo.src = "";
+        }
+        continuousMode = false;
+        cameraVideo.style.display = "none";
+        uploadedVideo.style.display = "none";
+        videoMode = "none";
+        videoProcessing = false;
+
+        document.getElementById("startCamera").disabled = false;
+        document.getElementById("stopCamera").disabled = true;
+        document.getElementById("toggleContinuous").disabled = true;
+        document.getElementById("toggleContinuous").textContent =
+          "▶ START SCAN";
+        document.getElementById("status").textContent = "STOPPED";
+        document.getElementById("hudStatus").textContent = "STANDBY";
+
+        addLogEntry("System stopped");
+      });
+
+      // Continuous Mode Toggle
+      document
+        .getElementById("toggleContinuous")
+        .addEventListener("click", () => {
+          continuousMode = !continuousMode;
+          document.getElementById("toggleContinuous").textContent =
+            continuousMode ? "⏸ PAUSE SCAN" : "▶ START SCAN";
+
+          if (continuousMode) {
+            document.getElementById("status").textContent =
+              "CONTINUOUS SCANNING ACTIVE";
+            document.getElementById("hudStatus").textContent = "SCANNING";
+            addLogEntry("Continuous scanning started");
+            if (videoMode === "camera") {
+              startContinuousAnalysis();
+            }
+          } else {
+            document.getElementById("status").textContent = "SCANNING PAUSED";
+            document.getElementById("hudStatus").textContent = "PAUSED";
+            addLogEntry("Scanning paused");
+          }
+        });
+
+      // Continuous Camera Analysis
+      function startContinuousAnalysis() {
+        if (!continuousMode || videoMode !== "camera") return;
+
+        const interval = parseInt(
+          document.getElementById("processingInterval").value
+        );
+
+        const analyze = async () => {
+          if (!continuousMode || videoMode !== "camera") return;
+
+          frameCount++;
+          currentFrame++;
+          document.getElementById("hudFrame").textContent = currentFrame;
+
+          if (currentFrame % interval === 0) {
+            await analyzeCurrentFrame(cameraVideo);
+          }
+
+          requestAnimationFrame(analyze);
+        };
+
+        analyze();
+      }
+
+      // Video Upload
+      document
+        .getElementById("videoUpload")
+        .addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const url = URL.createObjectURL(file);
+          uploadedVideo.src = url;
+          uploadedVideo.style.display = "block";
+          cameraVideo.style.display = "none";
+          videoMode = "video";
+
+          document.getElementById("startCamera").disabled = true;
+          document.getElementById("stopCamera").disabled = false;
+          document.getElementById("status").textContent =
+            "VIDEO LOADED • PROCESSING...";
+          document.getElementById("hudStatus").textContent = "PROCESSING";
+
+          addLogEntry(`Video uploaded: ${file.name}`);
+
+          uploadedVideo.play();
+          startVideoProcessing();
+        });
+
+      // Process Video
+      function startVideoProcessing() {
+        if (videoProcessing) return;
+        videoProcessing = true;
+        currentFrame = 0;
+
+        const interval = parseInt(
+          document.getElementById("processingInterval").value
+        );
+
+        const processInterval = setInterval(async () => {
+          if (!videoProcessing || uploadedVideo.paused || uploadedVideo.ended) {
+            clearInterval(processInterval);
+            videoProcessing = false;
+            document.getElementById("status").textContent = "✓ VIDEO COMPLETE";
+            document.getElementById("hudStatus").textContent = "COMPLETE";
+            addLogEntry("Video processing completed");
+            return;
+          }
+
+          frameCount++;
+          currentFrame++;
+          document.getElementById("hudFrame").textContent = currentFrame;
+
+          const progress =
+            (uploadedVideo.currentTime / uploadedVideo.duration) * 100;
+          document.getElementById("progressFill").style.width = progress + "%";
+
+          if (currentFrame % interval === 0) {
+            await analyzeCurrentFrame(uploadedVideo);
+          }
+        }, 33);
+      }
+
+      // add a global to track selected face index
+      let selectedFaceIndex = null;
+
+      async function analyzeCurrentFrame(videoElement) {
+        try {
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = videoElement.videoWidth;
+          tempCanvas.height = videoElement.videoHeight;
+          const tempCtx = tempCanvas.getContext("2d");
+          tempCtx.drawImage(videoElement, 0, 0);
+          const frameData = tempCanvas.toDataURL("image/jpeg", 0.9);
+
+          const response = await fetch(`${API_URL}/analyze_frame`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ frame: frameData }),
+          });
+
+          const result = await response.json();
+          // result: { face_detected: bool, faces: [ {bbox, ...}, ... ] }
+          displayResultsMulti(result, videoElement);
+        } catch (err) {
+          console.error("Analysis error:", err);
+        }
+      }
+
+      function displayResultsMulti(result, videoElement) {
+        if (
+          !result.face_detected ||
+          !Array.isArray(result.faces) ||
+          result.faces.length === 0
+        ) {
+          document.getElementById("hudStatus").textContent = "NO FACE";
+          return;
+        }
+
+        // draw canvas and all bounding boxes
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // draw each face bbox. color indicates deception on that face
+        result.faces.forEach((face, idx) => {
+          const isDec = face.is_deception;
+          ctx.strokeStyle = isDec ? "#ff0066" : "#00ff88";
+          ctx.lineWidth = 4;
+          ctx.shadowColor = isDec ? "#ff0066" : "#00ff88";
+          ctx.shadowBlur = 12;
+          const bbox = face.bbox; // [x1,y1,x2,y2]
+          ctx.strokeRect(
+            bbox[0],
+            bbox[1],
+            bbox[2] - bbox[0],
+            bbox[3] - bbox[1]
+          );
+
+          // draw index label
+          ctx.fillStyle = isDec ? "#ff0066" : "#00ff88";
+          ctx.font = "18px Orbitron, monospace";
+          ctx.fillText(`#${idx}`, bbox[0] + 6, bbox[1] + 20);
+        });
+
+        // by default, if no selection, select face 0
+        if (
+          selectedFaceIndex === null ||
+          selectedFaceIndex >= result.faces.length
+        ) {
+          selectedFaceIndex = 0;
+        }
+
+        // show details for selected face
+        const face = result.faces[selectedFaceIndex];
+        if (!face) return;
+
+        const isDeception = face.is_deception;
+        const prob = face.deception_probability;
+
+        const resultBox = document.getElementById("resultBox");
+        resultBox.textContent = face.prediction;
+        resultBox.className = isDeception
+          ? "result-box result-deception"
+          : "result-box result-truth";
+
+        document.getElementById("probabilityFill").style.width = prob + "%";
+        document.getElementById("probabilityFill").textContent =
+          prob.toFixed(1) + "%";
+        document.getElementById("probText").textContent = prob.toFixed(1) + "%";
+        document.getElementById("hudConfidence").textContent =
+          prob.toFixed(1) + "%";
+
+        totalAnalyses++;
+        totalProbability += prob;
+        if (isDeception) deceptionCount++;
+        else truthCount++;
+
+        document.getElementById("totalCount").textContent = totalAnalyses;
+        document.getElementById("avgProb").textContent =
+          (totalProbability / totalAnalyses).toFixed(1) + "%";
+        document.getElementById("truthCount").textContent = truthCount;
+        document.getElementById("deceptionCount").textContent = deceptionCount;
+
+        // add to session data (selected face)
+        const timestamp = new Date();
+        sessionData.push({
+          timestamp,
+          frame: currentFrame,
+          face_index: selectedFaceIndex,
+          result: face.prediction,
+          probability: prob,
+          emotion: face.emotion,
+          actionUnits: face.active_action_units,
+          question: document.getElementById("questionInput").value,
+          notes: document.getElementById("notesInput").value,
+        });
+
+        addLogEntry(
+          `Frame ${currentFrame}: ${face.prediction} (${prob.toFixed(1)}%)`,
+          isDeception
+        );
+
+        // populate emotion list
+        const emotionList = document.getElementById("emotionList");
+        emotionList.innerHTML = EMOTIONS_TO_HTML(face);
+
+        // populate AU list
+        const auList = document.getElementById("auList");
+        auList.innerHTML = AU_TO_HTML(face);
+
+        // display HUD
+        document.getElementById("hudStatus").textContent = isDeception
+          ? "DECEPTION"
+          : "TRUTH";
+
+        // Allow clicking on canvas to choose face index
+        canvas.onclick = function (ev) {
+          const rect = canvas.getBoundingClientRect();
+          const x = (ev.clientX - rect.left) * (canvas.width / rect.width);
+          const y = (ev.clientY - rect.top) * (canvas.height / rect.height);
+          // find the topmost face bbox containing this point (iterate reversed to prefer last drawn)
+          let chosen = null;
+          for (let i = result.faces.length - 1; i >= 0; i--) {
+            const b = result.faces[i].bbox;
+            if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) {
+              chosen = i;
+              break;
+            }
+          }
+          if (chosen !== null) {
+            selectedFaceIndex = chosen;
+            displayResultsMulti(result, videoElement); // refresh display with chosen face
+          }
+        };
+      }
+
+      // helper to render emotion list HTML
+      function EMOTIONS_TO_HTML(face) {
+        const scores = face.emotion_scores;
+        let rows = [];
+        for (let i = 0; i < scores.length; i++) {
+          const cls = EMOTION_LABELS[i] === face.emotion ? "active" : "";
+          rows.push(
+            `<div class="emotion-item ${cls}"><span>${
+              EMOTION_LABELS[i]
+            }</span><span>${(scores[i] * 100).toFixed(1)}%</span></div>`
+          );
+        }
+        return rows.join("");
+      }
+
+      // helper to render AU list HTML
+      function AU_TO_HTML(face) {
+        const aus = face.action_units;
+        let rows = [];
+        for (let i = 0; i < aus.length; i++) {
+          rows.push(
+            `<div class="au-item ${aus[i] ? "active" : ""}">${
+              AU_NAMES[i]
+            }</div>`
+          );
+        }
+        return rows.join("");
+      }
+
+      function addLogEntry(message, isDeception = null) {
+        const log = document.getElementById("sessionLog");
+        const time = new Date().toLocaleTimeString();
+        const entry = document.createElement("div");
+        entry.className = "log-entry";
+
+        let resultClass = "";
+        if (isDeception === true) resultClass = ' class="log-result deception"';
+        else if (isDeception === false) resultClass = ' class="log-result"';
+
+        entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span${resultClass}>${message}</span>
+            `;
+
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // Export Results
+      document.getElementById("exportResults").addEventListener("click", () => {
+        if (sessionData.length === 0) {
+          alert("No data to export. Please run some analyses first.");
+          return;
+        }
+
+        const question =
+          document.getElementById("questionInput").value ||
+          "No question entered";
+        const notes =
+          document.getElementById("notesInput").value || "No notes entered";
+
+        let report = "========================================\n";
+        report += "    DECEPTION DETECTION REPORT\n";
+        report += "========================================\n\n";
+        report += `Date: ${new Date().toLocaleString()}\n`;
+        report += `Question: ${question}\n`;
+        report += `Notes: ${notes}\n\n`;
+        report += "----------------------------------------\n";
+        report += "SUMMARY STATISTICS\n";
+        report += "----------------------------------------\n";
+        report += `Total Frames Analyzed: ${totalAnalyses}\n`;
+        report += `Average Deception Probability: ${(
+          totalProbability / totalAnalyses
+        ).toFixed(1)}%\n`;
+        report += `Truth Detections: ${truthCount}\n`;
+        report += `Deception Detections: ${deceptionCount}\n\n`;
+        report += "----------------------------------------\n";
+        report += "DETAILED ANALYSIS\n";
+        report += "----------------------------------------\n\n";
+
+        sessionData.forEach((data, idx) => {
+          report += `Analysis #${idx + 1} - Frame ${data.frame}\n`;
+          report += `Time: ${data.timestamp.toLocaleTimeString()}\n`;
+          report += `Result: ${data.result}\n`;
+          report += `Probability: ${data.probability.toFixed(1)}%\n`;
+          report += `Emotion: ${data.emotion}\n`;
+          report += `Active Action Units: ${
+            data.actionUnits.join(", ") || "None"
+          }\n`;
+          report += "\n";
+        });
+
+        report += "========================================\n";
+        report += "END OF REPORT\n";
+        report += "========================================\n";
+
+        // Download as text file
+        const blob = new Blob([report], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Deception_Report_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        addLogEntry("Report exported successfully");
+      });
+
+      // Clear Data
+      document.getElementById("clearData").addEventListener("click", () => {
+        if (!confirm("Clear all session data?")) return;
+
+        totalAnalyses = 0;
+        totalProbability = 0;
+        truthCount = 0;
+        deceptionCount = 0;
+        currentFrame = 0;
+        sessionData = [];
+
+        document.getElementById("totalCount").textContent = "0";
+        document.getElementById("avgProb").textContent = "0%";
+        document.getElementById("truthCount").textContent = "0";
+        document.getElementById("deceptionCount").textContent = "0";
+        document.getElementById("hudFrame").textContent = "0";
+        document.getElementById("probabilityFill").style.width = "0%";
+        document.getElementById("probabilityFill").textContent = "0%";
+        document.getElementById("probText").textContent = "0%";
+        document.getElementById("resultBox").textContent = "AWAITING SCAN";
+        document.getElementById("resultBox").className =
+          "result-box result-pending";
+        document.getElementById("questionInput").value = "";
+        document.getElementById("notesInput").value = "";
+        document.getElementById("sessionLog").innerHTML =
+          '<div class="log-entry"><span class="log-time">--:--:--</span><span>Session cleared</span></div>';
+
+        addLogEntry("All data cleared, new session started");
+      });
+
+      // Initialize
+      addLogEntry("System initialized and ready");
+    </script>
+  </body>
+</html>
