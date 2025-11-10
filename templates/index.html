@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deception Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--success);
+        }
+
+        .status-badge.inactive {
+            background: rgba(148, 163, 184, 0.1);
+            border-color: var(--border);
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .status-message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .status-message.info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary);
+        }
+
+        .status-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .status-message.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--warning);
+        }
+
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .results-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 900px;
+            width: 100%;
+            border: 1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .close-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .result-card {
+            background: var(--bg-dark);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .probability-display {
+            text-align: center;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .probability-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .probability-value {
+            font-size: 3rem;
+            font-weight: 800;
+        }
+
+        .probability-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .indicator-list {
+            list-style: none;
+        }
+
+        .indicator-list li {
+            padding: 0.75rem;
+            background: rgba(99, 102, 241, 0.05);
+            border-left: 3px solid var(--primary);
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .score-bar {
+            width: 100%;
+            height: 40px;
+            background: var(--bg-dark);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success) 0%, var(--warning) 50%, var(--danger) 100%);
+            border-radius: 20px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .modal-content {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 Multimodal Deception Detection System</h1>
+            <p class="subtitle">Advanced AI-Powered Truth Analysis</p>
+            <div class="status-bar" id="statusBar">
+                <div class="status-badge">
+                    <span class="loader"></span>
+                    <span>Loading system...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Recording Section -->
+            <div class="card">
+                <h2 class="card-title">
+                    <span class="step-number">1</span>
+                    Video Recording
+                </h2>
+                <p class="card-subtitle">Record or upload video for analysis</p>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="recordBtn" onclick="toggleRecording()">
+                        <span>▶️ Start Recording</span>
+                    </button>
+                </div>
+
+                <div style="margin: 1.5rem 0;">
+                    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1rem;">OR</p>
+                    <div class="file-upload">
+                        <input type="file" id="videoFile" accept="video/*" onchange="uploadVideo()">
+                        <label for="videoFile" class="file-upload-label">
+                            <span style="font-size: 2rem;">📹</span>
+                            <span>Click to upload video</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="file-upload" style="margin-top: 1rem;">
+                    <input type="file" id="audioFile" accept="audio/*" onchange="uploadAudio()">
+                    <label for="audioFile" class="file-upload-label">
+                        <span style="font-size: 2rem;">🎤</span>
+                        <span>Upload audio file (optional)</span>
+                    </label>
+                </div>
+
+                <div id="recordingStatus"></div>
+            </div>
+
+            <!-- Transcription Section -->
+            <div class="card">
+                <h2 class="card-title">
+                    <span class="step-number">2</span>
+                    Speech Transcription
+                </h2>
+                <p class="card-subtitle">AI-enhanced transcription preserving speech patterns</p>
+                
+                <textarea id="transcriptText" placeholder="Transcribed text will appear here, or type manually..."></textarea>
+                
+                <div class="btn-group" style="margin-top: 1rem;">
+                    <button class="btn btn-success" onclick="transcribeAudio()">
+                        <span>🎯 Auto-Transcribe</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearText()">
+                        <span>🗑️ Clear</span>
+                    </button>
+                </div>
+
+                <div id="transcriptionStatus"></div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h2 class="card-title">
+                <span class="step-number">3</span>
+                Run Analysis
+            </h2>
+            <p class="card-subtitle">Advanced multimodal deception detection with dynamic thresholds</p>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="runAnalysis()" style="font-size: 1.1rem; padding: 1rem 2.5rem;">
+                    <span>🔍 Analyze for Deception</span>
+                </button>
+            </div>
+
+            <div id="analysisStatus"></div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Analysis Results</h2>
+                <button class="close-btn" onclick="closeResults()">×</button>
+            </div>
+
+            <div class="probability-display" id="probabilityDisplay"></div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab" onclick="switchTab('indicators')">Indicators</button>
+                <button class="tab" onclick="switchTab('details')">Detailed Analysis</button>
+            </div>
+
+            <div class="tab-content active" id="overview-tab"></div>
+            <div class="tab-content" id="indicators-tab"></div>
+            <div class="tab-content" id="details-tab"></div>
+
+            <div class="btn-group" style="margin-top: 2rem;">
+                <button class="btn btn-primary" onclick="downloadReport()">
+                    <span>📥 Download Report</span>
+                </button>
+                <button class="btn btn-secondary" onclick="closeResults()">
+                    <span>Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResult = null;
+        let recordingInterval = null;
+
+        // Check system status on load
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/status');
+                const data = await response.json();
+                
+                const statusBar = document.getElementById('statusBar');
+                statusBar.innerHTML = '';
+                
+                const features = [
+                    { name: 'Facial Analysis', key: 'facial_analysis' },
+                    { name: 'Audio Analysis', key: 'audio_analysis' },
+                    { name: 'AI Models', key: 'ai_models' },
+                    { name: 'Speech-to-Text', key: 'speech_to_text' },
+                    { name: 'Whisper Enhanced', key: 'whisper_enhanced' }
+                ];
+                
+                features.forEach(feature => {
+                    const isActive = data.features[feature.key];
+                    const badge = document.createElement('div');
+                    badge.className = `status-badge ${isActive ? 'active' : 'inactive'}`;
+                    badge.innerHTML = `
+                        <span class="status-dot"></span>
+                        <span>${feature.name}</span>
+                    `;
+                    statusBar.appendChild(badge);
+                });
+            } catch (error) {
+                console.error('Status check failed:', error);
+                showMessage('recordingStatus', 'error', '⚠️ Backend connection failed. Make sure Flask server is running.');
+            }
+        }
+
+        async function toggleRecording() {
+            const btn = document.getElementById('recordBtn');
+            const isRecording = btn.textContent.includes('Stop');
+            
+            if (!isRecording) {
+                try {
+                    const response = await fetch('http://localhost:5000/api/start-recording', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        btn.innerHTML = '<span>⏹️ Stop Recording</span>';
+                        btn.className = 'btn btn-danger';
+                        showMessage('recordingStatus', 'info', '🔴 Recording in progress...');
+                        
+                        let seconds = 0;
+                        recordingInterval = setInterval(() => {
+                            seconds++;
+                            const mins = Math.floor(seconds / 60);
+                            const secs = seconds % 60;
+                            showMessage('recordingStatus', 'info', 
+                                `🔴 Recording: ${mins}:${secs.toString().padStart(2, '0')}`);
+                        }, 1000);
+                    }
+                } catch (error) {
+                    showMessage('recordingStatus', 'error', '❌ Failed to start recording: ' + error.message);
+                }
+            } else {
+                try {
+                    const response = await fetch('http://localhost:5000/api/stop-recording', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        btn.innerHTML = '<span>▶️ Start Recording</span>';
+                        btn.className = 'btn btn-primary';
+                        clearInterval(recordingInterval);
+                        showMessage('recordingStatus', 'success', '✅ Recording saved successfully');
+                    }
+                } catch (error) {
+                    showMessage('recordingStatus', 'error', '❌ Failed to stop recording: ' + error.message);
+                }
+            }
+        }
+
+        async function uploadVideo() {
+            const fileInput = document.getElementById('videoFile');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('video', file);
+            
+            showMessage('recordingStatus', 'info', '⏳ Uploading video...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/upload-video', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('recordingStatus', 'success', `✅ Video uploaded: ${data.filename}`);
+                } else {
+                    showMessage('recordingStatus', 'error', '❌ Upload failed');
+                }
+            } catch (error) {
+                showMessage('recordingStatus', 'error', '❌ Upload error: ' + error.message);
+            }
+        }
+
+        async function uploadAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('audio', file);
+            
+            showMessage('recordingStatus', 'info', '⏳ Uploading audio...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/upload-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('recordingStatus', 'success', `✅ Audio uploaded: ${data.filename}`);
+                } else {
+                    showMessage('recordingStatus', 'error', '❌ Upload failed');
+                }
+            } catch (error) {
+                showMessage('recordingStatus', 'error', '❌ Upload error: ' + error.message);
+            }
+        }
+
+        async function transcribeAudio() {
+            showMessage('transcriptionStatus', 'info', '🎯 Transcribing audio with enhanced filler word detection...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/transcribe', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('transcriptText').value = data.text;
+                    
+                    const disfluencies = data.disfluency_features;
+                    const infoText = `✅ Transcription complete! Detected: ${disfluencies.total_disfluencies || 0} disfluencies, ${disfluencies.filled_pauses || 0} filled pauses`;
+                    showMessage('transcriptionStatus', 'success', infoText);
+                } else {
+                    showMessage('transcriptionStatus', 'error', '❌ ' + data.error);
+                }
+            } catch (error) {
+                showMessage('transcriptionStatus', 'error', '❌ Transcription failed: ' + error.message);
+            }
+        }
+
+        function clearText() {
+            document.getElementById('transcriptText').value = '';
+            showMessage('transcriptionStatus', 'info', 'Text cleared');
+        }
+
+        async function runAnalysis() {
+            const text = document.getElementById('transcriptText').value.trim();
+            
+            if (!text) {
+                showMessage('analysisStatus', 'error', '❌ Please provide text for analysis');
+                return;
+            }
+            
+            showMessage('analysisStatus', 'info', '🔍 Running advanced deception analysis...');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentResult = data.result;
+                    showMessage('analysisStatus', 'success', '✅ Analysis complete!');
+                    displayResults(data.result);
+                } else {
+                    showMessage('analysisStatus', 'error', '❌ ' + data.error);
+                }
+            } catch (error) {
+                showMessage('analysisStatus', 'error', '❌ Analysis failed: ' + error.message);
+            }
+        }
+
+        function displayResults(result) {
+            const modal = document.getElementById('resultsModal');
+            modal.classList.add('active');
+            
+            // Probability display
+            const probability = Math.round(result.deception_probability * 100);
+            const isDeception = result.deception_detected;
+            const color = isDeception ? '#ef4444' : '#10b981';
+            
+            document.getElementById('probabilityDisplay').innerHTML = `
+                <div class="probability-circle" style="background: radial-gradient(circle, ${color}20 0%, transparent 70%); border: 4px solid ${color};">
+                    <div class="probability-value" style="color: ${color};">${probability}%</div>
+                    <div class="probability-label">${isDeception ? 'DECEPTION DETECTED' : 'NO DECEPTION'}</div>
+                </div>
+                <div style="margin-top: 1rem; font-size: 1.1rem;">
+                    Confidence: <strong>${Math.round(result.confidence * 100)}%</strong>
+                </div>
+                <div style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    Detection Threshold: ${Math.round(result.detection_threshold * 100)}%
+                </div>
+            `;
+            
+            // Overview tab
+            const overviewTab = document.getElementById('overview-tab');
+            overviewTab.innerHTML = `
+                <div class="result-card">
+                    <h3 style="margin-bottom: 1.5rem;">Modality Scores</h3>
+                    ${Object.entries(result.modality_scores).map(([modality, score]) => {
+                        const percentage = Math.round(score * 100);
+                        return `
+                            <div style="margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <span style="font-weight: 600;">${modality.charAt(0).toUpperCase() + modality.slice(1)}</span>
+                                    <span>${percentage}%</span>
+                                </div>
+                                <div class="score-bar">
+                                    <div class="score-fill" style="width: ${percentage}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            
+            // Indicators tab
+            const indicatorsTab = document.getElementById('indicators-tab');
+            if (result.key_indicators && result.key_indicators.length > 0) {
+                indicatorsTab.innerHTML = `
+                    <div class="result-card">
+                        <h3 style="margin-bottom: 1rem;">Detected Indicators</h3>
+                        <ul class="indicator-list">
+                            ${result.key_indicators.map(indicator => 
+                                `<li>🔍 ${indicator}</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                indicatorsTab.innerHTML = `
+                    <div class="result-card">
+                        <p style="text-align: center; color: var(--text-secondary);">No specific indicators detected</p>
+                    </div>
+                `;
+            }
+            
+            // Details tab
+            const detailsTab = document.getElementById('details-tab');
+            detailsTab.innerHTML = `
+                <div class="result-card">
+                    <h3 style="margin-bottom: 1rem;">Transcribed Text</h3>
+                    <p style="padding: 1rem; background: var(--bg-dark); border-radius: 8px; line-height: 1.6;">
+                        ${result.transcribed_text || 'No transcription available'}
+                    </p>
+                </div>
+                
+                ${result.disfluency_features ? `
+                    <div class="result-card" style="margin-top: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem;">Disfluency Analysis</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            ${Object.entries(result.disfluency_features).map(([key, value]) => `
+                                <div style="text-align: center; padding: 1rem; background: var(--bg-dark); border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">${value}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        ${key.replace(/_/g, ' ')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function closeResults() {
+            document.getElementById('resultsModal').classList.remove('active');
+        }
+
+        async function downloadReport() {
+            if (!currentResult) return;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/download-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ result: currentResult })
+                });
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `deception_report_${new Date().getTime()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('Failed to download report: ' + error.message);
+            }
+        }
+
+        function showMessage(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            const icons = {
+                info: '💡',
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            
+            element.innerHTML = `
+                <div class="status-message ${type}">
+                    <span>${icons[type]}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+
+        // Initialize
+        checkStatus();
+        
+        // Close modal on background click
+        document.getElementById('resultsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeResults();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2060,4 +2060,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error starting enhanced application: {e}")
         print("Please install missing dependencies and try again.")
-
