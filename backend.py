@@ -1,5 +1,5 @@
 """
-Flask Backend API for Deception Detection (REPLACEMENT)
+Flask Backend API for Deception Detection (FIXED FOR CPU/AMD)
 Usage: python backend.py
 Serves:
  - GET  /api/health
@@ -51,55 +51,87 @@ EMOTION_LABELS = ['Happy','Angry','Disgust','Fear','Sad','Neutral','Surprise']
 def initialize_models():
     global Retina, Emotion_class, Action_class, SVM_model, MODEL_ARGS
     parser = argparse.ArgumentParser()
+    
+    # Check device availability and set torch default device
+    use_cuda = torch.cuda.is_available()
+    device_name = "CUDA GPU" if use_cuda else "CPU"
+    print(f"🖥️  Device detected: {device_name}")
+    
+    # Set default device for torch operations
+    if not use_cuda:
+        torch.set_default_device('cpu')
+    
     # RetinaFace args (matching your lie_GUI defaults)
     parser.add_argument('--gpu_num', default="0", type=str)
     parser.add_argument('--vis_thres', default=0.6, type=float)
     parser.add_argument('--network', default='mobile0.25')
     parser.add_argument('--trained_model', default='./model/Facedetection/RetinaFace/weights/mobilenet0.25_Final.pth', type=str)
-    parser.add_argument('--cpu', action='store_true', help='use cpu mode for RetinaFace')
+    parser.add_argument('--cpu', action='store_true', default=not use_cuda, help='use cpu mode for RetinaFace')
     parser.add_argument('--confidence_threshold', default=0.6, type=float)
     parser.add_argument('--top_k', default=5000, type=int)
     parser.add_argument('--keep_top_k', default=750, type=int)
     parser.add_argument('--nms_threshold', default=0.4, type=float)
     parser.add_argument('--save_image', action='store_false', help='disable image saving in Flask backend')
 
-
     # Emotion args
     parser.add_argument('--at_type', default=1, type=int)
     parser.add_argument('--preTrain_path', default='./model/Emotion/model112/self_relation-attention_AFEW_better_46.0733_41.2759_12.tar')
     parser.add_argument('-c', '--config', type=str, default='./model/Landmark/configs/mb1_120x120.yml')
-    parser.add_argument('--mode', default='gpu', type=str, help='gpu or cpu mode')
+    parser.add_argument('--mode', default='gpu' if use_cuda else 'cpu', type=str, help='gpu or cpu mode')
     parser.add_argument('-o', '--opt', type=str, default='2d', choices=['2d','3d'])
+    
     args = parser.parse_args([])  # avoid reading actual CLI args
     MODEL_ARGS = args
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_num
+    
+    # Set environment based on CUDA availability
+    if use_cuda:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_num
+    else:
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Force CPU
 
     print("Initializing models (this may take a while)...")
+    
     # RetinaFace
-    Retina = retina_face(crop_size=224, args=args)
-    print("Loaded RetinaFace.")
+    try:
+        Retina = retina_face(crop_size=224, args=args)
+        print("✅ Loaded RetinaFace.")
+    except Exception as e:
+        print(f"❌ Failed to load RetinaFace: {e}")
+        raise
 
     # Emotion model
-    Emotion_class = emotion.Emotion_FAN(args=args)
-    print("Loaded Emotion model.")
+    try:
+        Emotion_class = emotion.Emotion_FAN(args=args)
+        print("✅ Loaded Emotion model.")
+    except Exception as e:
+        print(f"❌ Failed to load Emotion model: {e}")
+        raise
 
     # Action AU model
-    Action_class = action.Action_Resnet(args=Config())
-    print("Loaded Action (AU) model.")
+    try:
+        Action_class = action.Action_Resnet(args=Config())
+        print("✅ Loaded Action (AU) model.")
+    except Exception as e:
+        print(f"❌ Failed to load Action model: {e}")
+        raise
 
-    # ✅ Updated SVM loading
+    # Load SVM model
     svm_path = './model/SVM_model/se_res50+EU_v2/se_res50+EU/split_svc_AUC0.872.joblib'
     if not os.path.exists(svm_path):
-        print(f"[WARN] Preferred SVM model not found at {svm_path}, falling back to older version.")
+        print(f"⚠️  Preferred SVM model not found at {svm_path}, falling back to older version.")
         svm_path = './model/SVM_model/se_res50+EU/split_svc_acc0.720_AUC0.828.joblib'
 
-    SVM_model = load(svm_path)
-    print(f"Loaded SVM model: {svm_path}")
+    try:
+        SVM_model = load(svm_path)
+        print(f"✅ Loaded SVM model: {svm_path}")
+    except Exception as e:
+        print(f"❌ Failed to load SVM model: {e}")
+        raise
 
     # Quick introspection
-    print("SVM classes:", getattr(SVM_model, "classes_", None))
-    print("SVM predict_proba:", hasattr(SVM_model, "predict_proba"))
-    print("Initialization complete.")
+    print(f"📊 SVM classes: {getattr(SVM_model, 'classes_', None)}")
+    print(f"📊 SVM has predict_proba: {hasattr(SVM_model, 'predict_proba')}")
+    print("✅ Initialization complete.")
 
 
 def safe_tensor_to_numpy(x):
@@ -156,7 +188,7 @@ def analyze_all_faces_in_frame(frame_bgr):
             out_raw = cv2.resize(out_raw, (224,224), interpolation=cv2.INTER_AREA)
         except Exception as e:
             # alignment failed -> skip this face
-            print("Face alignment failed for idx", idx, "err:", e)
+            print(f"⚠️  Face alignment failed for idx {idx}: {e}")
             continue
 
         # Action model: returns AU logits/activations and embedding
@@ -172,7 +204,7 @@ def analyze_all_faces_in_frame(frame_bgr):
         AU_binary = [1 if float(x) >= 0.01 else 0 for x in logps_1d]
 
         # Emotion
-        pred_score, self_embedding, relation_embedding = Emotion_class.validate([out_raw])
+        pred_score, self_embedding, relation_embedding = Emotion_class.validate(out_raw)
         pred_score_np = safe_tensor_to_numpy(pred_score)
         if pred_score_np.ndim == 2 and pred_score_np.shape[0] == 1:
             pred_score_1d = pred_score_np[0]
@@ -186,7 +218,7 @@ def analyze_all_faces_in_frame(frame_bgr):
         frame_emb_AU = emb_np.reshape(1, -1).astype(np.float32)
         rel_emb_np = safe_tensor_to_numpy(relation_embedding).reshape(1, -1).astype(np.float32)
 
-        # Concatenate features for SVM exactly as desktop app
+        # Build feature: concatenate horizontally -> shape (1, total_features)
         try:
             feature = np.concatenate((frame_emb_AU, rel_emb_np), axis=1)
         except Exception:
@@ -246,7 +278,12 @@ def analyze_all_faces_in_frame(frame_bgr):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'healthy', 'models_loaded': Retina is not None})
+    device_info = "CUDA GPU" if torch.cuda.is_available() else "CPU"
+    return jsonify({
+        'status': 'healthy', 
+        'models_loaded': Retina is not None,
+        'device': device_info
+    })
 
 @app.route('/api/analyze_frame', methods=['POST'])
 def analyze_frame():
@@ -262,8 +299,6 @@ def analyze_frame():
         img = Image.open(BytesIO(img_data)).convert('RGB')
         frame = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-        # Optionally resize for consistent processing (RetinaFace handles arbitrary sizes)
-        # Keep native size to preserve bbox consistency
         faces = analyze_all_faces_in_frame(frame)
         if len(faces) == 0:
             return jsonify({'face_detected': False, 'faces': []})

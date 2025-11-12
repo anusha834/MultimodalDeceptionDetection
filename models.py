@@ -925,62 +925,112 @@ def wide_resnet101_2(pretrained=False, num_classes=1000, progress=True, **kwargs
     kwargs['width_per_group'] = 64 * 2
     return wide_resnet('wide_resnet101_2', wide_Bottleneck, [3, 4, 23, 3],pretrained, progress, **kwargs)
 # ------------------------------------------------------------------------------
+# Add this to the END of your models.py file to replace the select_model function
+# Add this to the END of your models.py file to replace the select_model function
+
 def select_model(args):
+    """
+    Model selection function with CPU/GPU compatibility
+    """
+    # Detect device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
+    # Select model architecture
     if args.model_name == 'resnet18':
-        if args.isPretrain == False :
-            model = resnet18(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = resnet18(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = resnet18(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = resnet18(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            # Load pretrained model with proper device mapping
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'resnet50':
-        if args.isPretrain == False :
-            model = resnet50(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = resnet50(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = resnet50(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = resnet50(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'resnet101':
-        if args.isPretrain == False :
-            model = resnet101(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = resnet101(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = resnet101(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = resnet101(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'se_resnet50':
-        if args.isPretrain == False :
-            model = se_resnet50(num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = se_resnet50(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = se_resnet50(args = args, num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = se_resnet50(args=args, num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model,map_location=device,weights_only=False)
     elif args.model_name == 'se_resnet101':
-        if args.isPretrain == False :
-            model = se_resnet101(num_classes = args.num_classes)
+        if args.isPretrain == False:
+            model = se_resnet101(num_classes=args.num_classes)
         else:
-            model = se_resnet101(num_classes = args.num_classes)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = se_resnet101(num_classes=args.num_classes)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'se_resneXt50':
-        if args.isPretrain == False :
-            model = se_resnext50(num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = se_resnext50(num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = se_resnext50(num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = se_resnext50(num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'se_resneXt101':
-        if args.isPretrain == False :
-            model = se_resnext101(num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = se_resnext101(num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = se_resnext101(num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = se_resnext101(num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'wide_resnet50':
-        if args.isPretrain == False :
-            model = wide_resnet50_2(num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = wide_resnet50_2(num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = wide_resnet50_2(num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)
+            model = wide_resnet50_2(num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
     elif args.model_name == 'wide_resnet101':
-        if args.isPretrain == False :
-            model = wide_resnet101_2(num_classes = args.num_classes, pretrained = args.pretrained_weight)
+        if args.isPretrain == False:
+            model = wide_resnet101_2(num_classes=args.num_classes, pretrained=args.pretrained_weight)
         else:
-            model = wide_resnet101_2(num_classes = args.num_classes, pretrained = args.pretrained_weight)
-            model = torch.load(args.save_model + '/' + args.pretrain_model)    
-    model = model.cuda()
-    if len(args.gpu_id.split(',')) > 1 :
+            model = wide_resnet101_2(num_classes=args.num_classes, pretrained=args.pretrained_weight)
+            if torch.cuda.is_available():
+                model = torch.load(args.save_model + '/' + args.pretrain_model)
+            else:
+                model = torch.load(args.save_model + '/' + args.pretrain_model, map_location=device)
+    
+    # Move model to device
+    model = model.to(device)
+    
+    # Only use DataParallel if multiple GPUs available
+    if torch.cuda.is_available() and len(args.gpu_id.split(',')) > 1:
         model = nn.DataParallel(model)
+    
     return model
